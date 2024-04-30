@@ -8,16 +8,13 @@ import java.util.List;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@FieldDefaults(level= AccessLevel.PRIVATE)
+@FieldDefaults(level = AccessLevel.PRIVATE)
 @Builder
 public class CartResponseDto {
 
-    Integer cartTotal;
-
-    Integer numberOfItems;
-
     String customerName;
 
-    List<ItemResponseDto> items;
+    int cartTotal;
 
+    List<ItemResponseDto> items;
 }

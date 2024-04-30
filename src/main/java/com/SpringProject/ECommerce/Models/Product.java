@@ -11,11 +11,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Entity
-@Data
 @NoArgsConstructor
 @AllArgsConstructor
+@Data
+@FieldDefaults(level = AccessLevel.PRIVATE)
 @Table(name="product")
-@FieldDefaults(level= AccessLevel.PRIVATE)
 @Builder
 public class Product {
 
@@ -23,11 +23,11 @@ public class Product {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     int id;
 
-    String name;
+    String productName;
 
     int price;
 
-    int quantity;
+    int availableQuantity;
 
     @Enumerated(EnumType.STRING)
     ProductCategory productCategory;
@@ -40,5 +40,5 @@ public class Product {
     Seller seller;
 
     @OneToMany(mappedBy = "product",cascade = CascadeType.ALL)
-    List<Item> itemList = new ArrayList<>();
+    List<Item> items = new ArrayList<>();
 }

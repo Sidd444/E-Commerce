@@ -14,5 +14,5 @@ public interface ProductRepository extends JpaRepository<Product,Integer> {
     List<Product> findByProductCategory(ProductCategory productCategory);
 
     @Query(value = "select p from Product p where p.price > :price and p.productCategory=:category")
-    List<Product> getAllProductsByPriceAndCategory(int price, String category);
+    List<Product> getProdByCategoryAndPriceGreaterThan(int price, ProductCategory category);
 }

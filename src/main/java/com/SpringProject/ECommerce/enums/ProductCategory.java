@@ -2,7 +2,8 @@ package com.SpringProject.ECommerce.enums;
 
 public enum ProductCategory {
     SPORTS,
-    FASHION,
+    FOOD,
     ELECTRONICS,
-    FOOD
+    LIFESTYLE,
+    KITCHEN
 }

@@ -15,23 +15,15 @@ public class SellerService {
     @Autowired
     SellerRepository sellerRepository;
 
-    public SellerResponseDto addSeller(SellerRequestDto sellerRequestDto) throws EmailAlreadyPresentException {
+    public SellerResponseDto addSeller(SellerRequestDto sellerRequestDto) {
 
-//        Seller seller = new Seller();
-//        seller.setName(sellerRequestDto.getName());
-//        seller.setEmailId(sellerRequestDto.getEmailId());
-//        seller.setMobNo(sellerRequestDto.getMobNo());
-//        seller.setAge(sellerRequestDto.getAge());
-
-        if(sellerRepository.findByEmailId(sellerRequestDto.getEmailId())!=null)
-            throw new EmailAlreadyPresentException("Email Id already registered");
-
+        // dto -> entity
         Seller seller = SellerTransformer.SellerRequestDtoToSeller(sellerRequestDto);
+
+        // save the entity
         Seller savedSeller = sellerRepository.save(seller);
 
-        // prepare response Dto
-        SellerResponseDto sellerResponseDto = SellerTransformer.SellerToSellerResponseDto(savedSeller);
-        return sellerResponseDto;
-
+        // prepare response dto
+        return SellerTransformer.SellerToSellerResponseDto(savedSeller);
     }
 }

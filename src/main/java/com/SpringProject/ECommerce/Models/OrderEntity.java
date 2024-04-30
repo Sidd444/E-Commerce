@@ -6,32 +6,32 @@ import lombok.*;
 import lombok.experimental.FieldDefaults;
 import org.hibernate.annotations.CreationTimestamp;
 
-import java.sql.Date;
+import java.util.Date;
 import java.util.ArrayList;
 import java.util.List;
 
 @Entity
-@Data
 @NoArgsConstructor
 @AllArgsConstructor
-@Table(name="ordered")
-@FieldDefaults(level= AccessLevel.PRIVATE)
-public class Ordered {
+@Data
+@FieldDefaults(level = AccessLevel.PRIVATE)
+@Table(name="order_info")
+public class OrderEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     int id;
 
-    String orderNo;
-
-    int totalValue;
+    String orderId;  // UUID
 
     @CreationTimestamp
     Date orderDate;
 
     String cardUsed;
 
-    @OneToMany(mappedBy = "order",cascade = CascadeType.ALL)
+    int orderTotal;
+
+    @OneToMany(mappedBy = "orderEntity",cascade = CascadeType.ALL)
     List<Item> items = new ArrayList<>();
 
     @ManyToOne

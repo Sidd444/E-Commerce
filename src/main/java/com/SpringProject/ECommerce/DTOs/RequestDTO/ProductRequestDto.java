@@ -7,17 +7,16 @@ import lombok.experimental.FieldDefaults;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@FieldDefaults(level= AccessLevel.PRIVATE)
-@Builder
+@FieldDefaults(level = AccessLevel.PRIVATE)
 public class ProductRequestDto {
 
-    int sellerId;
+    String sellerEmail;
 
     String productName;
 
     int price;
 
-    int quantity;
+    int availableQuantity;
 
-    ProductCategory productCategory;
+    ProductCategory category;
 }

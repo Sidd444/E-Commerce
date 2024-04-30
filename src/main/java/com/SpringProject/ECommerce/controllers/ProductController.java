@@ -2,10 +2,12 @@ package com.SpringProject.ECommerce.controllers;
 
 import com.SpringProject.ECommerce.DTOs.RequestDTO.ProductRequestDto;
 import com.SpringProject.ECommerce.DTOs.ResponseDTO.ProductResponseDto;
-import com.SpringProject.ECommerce.Exceptions.InvalidSellerException;
+import com.SpringProject.ECommerce.Exceptions.SellerNotFoundException;
 import com.SpringProject.ECommerce.Services.ProductService;
 import com.SpringProject.ECommerce.enums.ProductCategory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -18,23 +20,24 @@ public class ProductController {
     ProductService productService;
 
     @PostMapping("/add")
-    public ProductResponseDto addProduct(@RequestBody ProductRequestDto productRequestDto) throws InvalidSellerException {
+    public ResponseEntity addProduct(@RequestBody ProductRequestDto productRequestDto){
 
-        return productService.addProduct(productRequestDto);
+        try{
+          ProductResponseDto response = productService.addProduct(productRequestDto);
+          return new ResponseEntity(response,HttpStatus.CREATED);
+        }
+        catch (SellerNotFoundException e){
+            return new ResponseEntity(e.getMessage(), HttpStatus.BAD_REQUEST);
+        }
     }
 
-    // get all products of a particular category
-    @GetMapping("/get/{category}")
-    public List<ProductResponseDto> getAllProductsByCategory(@PathVariable("category") ProductCategory category){
-        return productService.getAllProductsByCategory(category);
-    }
+    @GetMapping("/get_by_category_and_price_greater_than")
+    public ResponseEntity getProdByCategoryAndPriceGreaterThan(@RequestParam("price") int price,
+                                                               @RequestParam("category")ProductCategory category){
 
-    @GetMapping("/get/{price}/{category}")
-    public List<ProductResponseDto> getAllProductsByPriceAndCategory(
-            @PathVariable("price") int price,
-            @PathVariable("category") String productCategory){
-
-        return productService.getAllProductsByPriceAndCategory(price, productCategory);
+        List<ProductResponseDto> productResponseDtoList =
+                productService.getProdByCategoryAndPriceGreaterThan(price,category);
+        return new ResponseEntity(productResponseDtoList,HttpStatus.FOUND);
     }
 
     // Get all product by seller email id

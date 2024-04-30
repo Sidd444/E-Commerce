@@ -20,14 +20,11 @@ public class SellerController {
 
     @PostMapping("/add")
     public ResponseEntity addSeller(@RequestBody SellerRequestDto sellerRequestDto){
-        try{
-            SellerResponseDto sellerResponseDto = sellerService.addSeller(sellerRequestDto);
-            return new ResponseEntity(sellerResponseDto, HttpStatus.CREATED);
-        }
-        catch (Exception e){
-            return new ResponseEntity(e.getMessage(),HttpStatus.BAD_REQUEST);
-        }
+
+        SellerResponseDto sellerResponseDto = sellerService.addSeller(sellerRequestDto);
+        return new ResponseEntity(sellerResponseDto, HttpStatus.CREATED);
     }
+}
 
     //  GET a seller by email
 
@@ -42,4 +39,4 @@ public class SellerController {
     //delete by id
 
     // get all sellers of a particular age
-}
+

@@ -6,6 +6,7 @@ import com.SpringProject.ECommerce.DTOs.RequestDTO.ItemRequestDto;
 import com.SpringProject.ECommerce.DTOs.ResponseDTO.CartResponseDto;
 import com.SpringProject.ECommerce.DTOs.ResponseDTO.OrderResponseDto;
 import com.SpringProject.ECommerce.Models.Item;
+import com.SpringProject.ECommerce.Repositories.CartRepository;
 import com.SpringProject.ECommerce.Services.CartService;
 import com.SpringProject.ECommerce.Services.ItemService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,13 +27,16 @@ public class CartController {
     @Autowired
     CartService cartService;
 
+    @Autowired
+    CartRepository cartRepository;
+
     @PostMapping("/add")
-    public ResponseEntity addToCart(@RequestBody ItemRequestDto itemRequestDto) throws Exception {
+    public ResponseEntity addToCart(@RequestBody ItemRequestDto itemRequestDto){
 
         try{
-            Item savedItem = itemService.addItem(itemRequestDto);
-            CartResponseDto cartResponseDto = cartService.saveCart(itemRequestDto.getCustomerId(),savedItem);
-            return new ResponseEntity(cartResponseDto,HttpStatus.ACCEPTED);
+          Item item = itemService.createItem(itemRequestDto);
+          CartResponseDto cartResponseDto = cartService.addItemToCart(itemRequestDto,item);
+          return new ResponseEntity(cartResponseDto,HttpStatus.CREATED);
         }
         catch (Exception e){
             return new ResponseEntity(e.getMessage(), HttpStatus.BAD_REQUEST);
@@ -40,12 +44,17 @@ public class CartController {
     }
 
     @PostMapping("/checkout")
-    public OrderResponseDto checkOutCart(@RequestBody CheckoutCartRequestDto checkoutCartRequestDto) throws Exception {
+    public ResponseEntity checkoutCart(@RequestBody CheckoutCartRequestDto checkoutCartRequestDto){
 
-        return cartService.checkOutCart(checkoutCartRequestDto);
+        try{
+          OrderResponseDto response = cartService.checkoutCart(checkoutCartRequestDto);
+          return new ResponseEntity(response,HttpStatus.CREATED);
+        }
+        catch (Exception e){
+            return new ResponseEntity(e.getMessage(),HttpStatus.BAD_REQUEST);
+        }
     }
-
-
+}
     // remove from cart
 
     // view all items in cart
@@ -55,4 +64,3 @@ public class CartController {
     // my email - kunaljindal995@gmail.com
 
 
-}

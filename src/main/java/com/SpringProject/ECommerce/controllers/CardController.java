@@ -3,7 +3,7 @@ package com.SpringProject.ECommerce.controllers;
 
 import com.SpringProject.ECommerce.DTOs.RequestDTO.CardRequestDto;
 import com.SpringProject.ECommerce.DTOs.ResponseDTO.CardResponseDto;
-import com.SpringProject.ECommerce.Exceptions.InvalidCustomerException;
+import com.SpringProject.ECommerce.Exceptions.CustomerNotFoundException;
 import com.SpringProject.ECommerce.Services.CardService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -22,13 +22,16 @@ public class CardController {
 
     @PostMapping("/add")
     public ResponseEntity addCard(@RequestBody CardRequestDto cardRequestDto){
+
         try{
             CardResponseDto cardResponseDto = cardService.addCard(cardRequestDto);
             return new ResponseEntity(cardResponseDto, HttpStatus.CREATED);
-        } catch (InvalidCustomerException e) {
+        }
+        catch (CustomerNotFoundException e){
             return new ResponseEntity(e.getMessage(),HttpStatus.BAD_REQUEST);
         }
     }
+}
 
     // get all VISA cards
 
@@ -36,4 +39,4 @@ public class CardController {
 
     // Return the CardType which has maximum number of that card
 
-}
+

@@ -1,6 +1,6 @@
 package com.SpringProject.ECommerce.Models;
+import com.SpringProject.ECommerce.enums.Gender;
 
-import com.SpringProject.ECommerce.enums.CardType;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
@@ -9,12 +9,12 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Entity
-@Data
 @NoArgsConstructor
 @AllArgsConstructor
-@Table(name="customer")
-@FieldDefaults(level= AccessLevel.PRIVATE)
+@Data
+@FieldDefaults(level = AccessLevel.PRIVATE)
 @Builder
+@Table(name="customer")
 public class Customer {
 
     @Id
@@ -26,19 +26,19 @@ public class Customer {
     @Column(unique = true)
     String emailId;
 
-    Integer age;
-
     @Column(unique = true)
     String mobNo;
 
-    String address;
-
-    @OneToMany(mappedBy = "customer",cascade = CascadeType.ALL)
-    List<Card> cards = new ArrayList<>();
+    @Enumerated(EnumType.STRING)
+    Gender gender;
 
     @OneToOne(mappedBy = "customer",cascade = CascadeType.ALL)
     Cart cart;
 
-    @OneToMany(mappedBy = "customer", cascade = CascadeType.ALL)
-    List<Ordered> orderList = new ArrayList<>();
+    @OneToMany(mappedBy = "customer",cascade = CascadeType.ALL)
+    List<Card> cards = new ArrayList<>();
+
+    @OneToMany(mappedBy = "customer",cascade = CascadeType.ALL)
+    List<OrderEntity> orders = new ArrayList<>();
+
 }

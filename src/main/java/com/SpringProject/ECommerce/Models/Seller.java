@@ -9,11 +9,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Entity
-@Data
 @NoArgsConstructor
 @AllArgsConstructor
+@Data
+@FieldDefaults(level = AccessLevel.PRIVATE)
 @Table(name="seller")
-@FieldDefaults(level= AccessLevel.PRIVATE)
 @Builder
 public class Seller {
 
@@ -23,12 +23,11 @@ public class Seller {
 
     String name;
 
-    @Column(unique = true)
+    @Column(unique = true,nullable = false)
     String emailId;
 
-    Integer age;
-
-    String mobNo;
+    @Column(unique = true,nullable = false)
+    String panNo;
 
     @OneToMany(mappedBy = "seller",cascade = CascadeType.ALL)
     List<Product> products = new ArrayList<>();

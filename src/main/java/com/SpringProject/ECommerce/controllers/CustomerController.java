@@ -2,9 +2,11 @@ package com.SpringProject.ECommerce.controllers;
 
 import com.SpringProject.ECommerce.DTOs.RequestDTO.CustomerRequestDto;
 import com.SpringProject.ECommerce.DTOs.ResponseDTO.CustomerResponseDto;
-import com.SpringProject.ECommerce.Exceptions.MobileNoAlreadyPresentException;
 import com.SpringProject.ECommerce.Services.CustomerService;
+
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -19,10 +21,12 @@ public class CustomerController {
     CustomerService customerService;
 
     @PostMapping("/add")
-    public CustomerResponseDto addCustomer(@RequestBody CustomerRequestDto customerRequestDto) throws MobileNoAlreadyPresentException {
+    public ResponseEntity addCustomer(@RequestBody CustomerRequestDto customerRequestDto){
 
-        return customerService.addCustomer(customerRequestDto);
+        CustomerResponseDto response = customerService.addCustomer(customerRequestDto);
+        return new ResponseEntity(response, HttpStatus.CREATED);
     }
+}
 
     // view all customers
 
@@ -36,4 +40,3 @@ public class CustomerController {
 
     // delete a customer by email/mob
 
-}

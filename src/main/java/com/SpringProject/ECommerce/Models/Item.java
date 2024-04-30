@@ -6,11 +6,11 @@ import lombok.*;
 import lombok.experimental.FieldDefaults;
 
 @Entity
-@Data
 @NoArgsConstructor
 @AllArgsConstructor
+@Data
+@FieldDefaults(level = AccessLevel.PRIVATE)
 @Table(name="item")
-@FieldDefaults(level= AccessLevel.PRIVATE)
 @Builder
 public class Item {
 
@@ -26,9 +26,9 @@ public class Item {
 
     @ManyToOne
     @JoinColumn
-    Product product;
+    OrderEntity orderEntity;
 
     @ManyToOne
     @JoinColumn
-    Ordered order;
+    Product product;
 }

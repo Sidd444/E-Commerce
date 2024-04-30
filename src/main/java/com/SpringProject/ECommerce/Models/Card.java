@@ -5,14 +5,14 @@ import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
-import java.sql.Date;
+import java.util.Date;
 
 @Entity
-@Data
 @NoArgsConstructor
 @AllArgsConstructor
+@Data
+@FieldDefaults(level = AccessLevel.PRIVATE)
 @Table(name="card")
-@FieldDefaults(level= AccessLevel.PRIVATE)
 @Builder
 public class Card {
 
@@ -20,12 +20,12 @@ public class Card {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     int id;
 
-    @Column(unique = true,nullable = false)
+    @Column(unique = true)
     String cardNo;
 
     int cvv;
 
-    Date expiryDate;
+    Date validTill;
 
     @Enumerated(EnumType.STRING)
     CardType cardType;
@@ -33,4 +33,5 @@ public class Card {
     @ManyToOne
     @JoinColumn
     Customer customer;
+
 }

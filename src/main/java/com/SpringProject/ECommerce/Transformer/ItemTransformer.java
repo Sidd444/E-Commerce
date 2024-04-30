@@ -6,19 +6,20 @@ import com.SpringProject.ECommerce.Models.Item;
 
 public class ItemTransformer {
 
-    public static Item ItemRequestDtoToItem(ItemRequestDto itemRequestDto){
+    public static Item ItemRequestDtoToItem(int requiredQuantity){
+
         return Item.builder()
-                .requiredQuantity(itemRequestDto.getRequiredQuantity())
+                .requiredQuantity(requiredQuantity)
                 .build();
     }
 
     public static ItemResponseDto ItemToItemResponseDto(Item item){
 
         return ItemResponseDto.builder()
-                .priceOfOneItem(item.getProduct().getPrice())
-                .productName(item.getProduct().getName())
-                .quantity(item.getRequiredQuantity())
-                .totalPrice(item.getRequiredQuantity()*item.getProduct().getPrice())
+                .itemPrice(item.getProduct().getPrice())
+                .itemName(item.getProduct().getProductName())
+                .quantityAdded(item.getRequiredQuantity())
+                .category(item.getProduct().getProductCategory())
                 .build();
     }
 }

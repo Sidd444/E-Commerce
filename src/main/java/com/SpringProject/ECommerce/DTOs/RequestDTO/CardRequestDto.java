@@ -9,17 +9,16 @@ import java.sql.Date;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@FieldDefaults(level= AccessLevel.PRIVATE)
-@Builder
+@FieldDefaults(level = AccessLevel.PRIVATE)
 public class CardRequestDto {
 
-    String mobNo;
+    String customerMobile;
 
     String cardNo;
 
     int cvv;
 
-    Date expiryDate;
+    Date validTill;
 
     CardType cardType;
 }

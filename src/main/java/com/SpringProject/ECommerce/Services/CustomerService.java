@@ -3,7 +3,6 @@ package com.SpringProject.ECommerce.Services;
 
 import com.SpringProject.ECommerce.DTOs.RequestDTO.CustomerRequestDto;
 import com.SpringProject.ECommerce.DTOs.ResponseDTO.CustomerResponseDto;
-import com.SpringProject.ECommerce.Exceptions.MobileNoAlreadyPresentException;
 import com.SpringProject.ECommerce.Models.*;
 import com.SpringProject.ECommerce.Repositories.CustomerRepository;
 import com.SpringProject.ECommerce.Transformer.CustomerTransformer;
@@ -17,25 +16,20 @@ public class CustomerService {
     @Autowired
     CustomerRepository customerRepository;
 
-    public CustomerResponseDto addCustomer(CustomerRequestDto customerRequestDto) throws MobileNoAlreadyPresentException {
+    public CustomerResponseDto addCustomer(CustomerRequestDto customerRequestDto) {
 
-        if(customerRepository.findByMobNo(customerRequestDto.getMobNo())!=null)
-            throw new MobileNoAlreadyPresentException("Sorry! Customer already exists!");
-
-        // request dto -> customer
+        // dto -> entity
         Customer customer = CustomerTransformer.CustomerRequestDtoToCustomer(customerRequestDto);
-        Cart cart = Cart.builder()
-                .cartTotal(0)
-                .numberOfItems(0)
-                .customer(customer)
-                .build();
+
+        Cart cart = new Cart();
+        cart.setCartTotal(0);
+        cart.setCustomer(customer);
         customer.setCart(cart);
 
+        Customer savedCustomer = customerRepository.save(customer);   // saves both customer and cart;
 
-
-        Customer savedCustomer = customerRepository.save(customer);  // customer and cart
-
-        // prepare response dto
+        // prepare the response dto
         return CustomerTransformer.CustomerToCustomerResponseDto(savedCustomer);
+
     }
 }

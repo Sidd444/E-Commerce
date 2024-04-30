@@ -10,21 +10,18 @@ import java.util.List;
 
 
 @Entity
-@Data
 @NoArgsConstructor
 @AllArgsConstructor
+@Data
+@FieldDefaults(level = AccessLevel.PRIVATE)
 @Table(name="cart")
-@FieldDefaults(level= AccessLevel.PRIVATE)
-@Builder
 public class Cart {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     int id;
 
-    Integer cartTotal;
-
-    Integer numberOfItems;
+    int cartTotal;
 
     @OneToOne
     @JoinColumn
@@ -32,5 +29,4 @@ public class Cart {
 
     @OneToMany(mappedBy = "cart",cascade = CascadeType.ALL)
     List<Item> items = new ArrayList<>();
-
 }

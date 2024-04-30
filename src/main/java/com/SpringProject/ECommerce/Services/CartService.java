@@ -2,21 +2,29 @@ package com.SpringProject.ECommerce.Services;
 
 
 import com.SpringProject.ECommerce.DTOs.RequestDTO.CheckoutCartRequestDto;
+import com.SpringProject.ECommerce.DTOs.RequestDTO.ItemRequestDto;
 import com.SpringProject.ECommerce.DTOs.ResponseDTO.CartResponseDto;
 import com.SpringProject.ECommerce.DTOs.ResponseDTO.ItemResponseDto;
 import com.SpringProject.ECommerce.DTOs.ResponseDTO.OrderResponseDto;
 import com.SpringProject.ECommerce.Exceptions.InvalidCardException;
-import com.SpringProject.ECommerce.Exceptions.InvalidCustomerException;
+import com.SpringProject.ECommerce.Exceptions.CustomerNotFoundException;
+import com.SpringProject.ECommerce.Exceptions.EmptyCartException;
 import com.SpringProject.ECommerce.Models.*;
 import com.SpringProject.ECommerce.Repositories.CardRespository;
 import com.SpringProject.ECommerce.Repositories.CartRepository;
 import com.SpringProject.ECommerce.Repositories.CustomerRepository;
-import com.SpringProject.ECommerce.Repositories.OrderedRepository;
+import com.SpringProject.ECommerce.Repositories.ItemRepository;
+import com.SpringProject.ECommerce.Repositories.OrderEntityRepository;
+import com.SpringProject.ECommerce.Repositories.ProductRepository;
+import com.SpringProject.ECommerce.Transformer.CartTransformer;
 import com.SpringProject.ECommerce.Transformer.ItemTransformer;
+import com.SpringProject.ECommerce.Transformer.OrderTransformer;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 @Service
@@ -26,88 +34,68 @@ public class CartService {
     CustomerRepository customerRepository;
 
     @Autowired
-    CartRepository cartRepository;
-
-    @Autowired OrderService orderService;
-    @Autowired
-    OrderedRepository orderedRepository;
+    ItemRepository itemRepository;
 
     @Autowired
     CardRespository cardRespository;
 
-    public CartResponseDto saveCart(Integer customerId, Item item){
+    @Autowired
+    CartRepository cartRepository;
+    @Autowired
+    ProductRepository productRepository;
 
-        Customer customer = customerRepository.findById(customerId).get();
+    @Autowired
+    OrderService orderService;
+    @Autowired
+    private OrderEntityRepository orderEntityRepository;
+
+    public CartResponseDto addItemToCart(ItemRequestDto itemRequestDto,Item item) {
+
+        Customer customer = customerRepository.findByEmailId(itemRequestDto.getCustomerEmail());
+        Product product = productRepository.findById(itemRequestDto.getProductId()).get();
+
         Cart cart = customer.getCart();
+        cart.setCartTotal(cart.getCartTotal() + product.getPrice()*itemRequestDto.getRequiredQuantity());
 
-        int newTotal = cart.getCartTotal() + item.getRequiredQuantity()*item.getProduct().getPrice();
-        cart.setCartTotal(newTotal);
-        cart.getItems().add(item);
-        cart.setNumberOfItems(cart.getItems().size());
         item.setCart(cart);
+        item.setProduct(product);
+        Item savedItem = itemRepository.save(item);  // to avoid duplicacy
+
+        cart.getItems().add(savedItem);
+        product.getItems().add(savedItem);
         Cart savedCart = cartRepository.save(cart);
+        productRepository.save(product);
 
-        CartResponseDto cartResponseDto = CartResponseDto.builder()
-                .cartTotal(savedCart.getCartTotal())
-                .customerName(customer.getName())
-                .numberOfItems(savedCart.getNumberOfItems())
-                .build();
+        //prepare cartResponse Dto
+        return CartTransformer.CartToCartReponseDto(savedCart);
 
-        List<ItemResponseDto> itemResponseDtoList = new ArrayList<>();
-        for(Item itemEntity: savedCart.getItems()){
-            ItemResponseDto itemResponseDto = ItemTransformer.ItemToItemResponseDto(itemEntity);
-            itemResponseDtoList.add(itemResponseDto);
-        }
-
-        cartResponseDto.setItems(itemResponseDtoList);
-        return cartResponseDto;
     }
 
-    public OrderResponseDto checkOutCart(CheckoutCartRequestDto checkoutCartRequestDto) throws Exception {
+    public OrderResponseDto checkoutCart(CheckoutCartRequestDto checkoutCartRequestDto) {
 
-        Customer customer;
-        try{
-            customer = customerRepository.findById(checkoutCartRequestDto.getCustomerId()).get();
-        }
-        catch (Exception e){
-            throw new InvalidCustomerException("Customer id is invalid!!!");
+        Customer customer = customerRepository.findByEmailId(checkoutCartRequestDto.getCustomerEmail());
+        if(customer==null){
+            throw new CustomerNotFoundException("Customer doesn't exist");
         }
 
         Card card = cardRespository.findByCardNo(checkoutCartRequestDto.getCardNo());
-        if(card==null || card.getCvv()!=checkoutCartRequestDto.getCvv() || card.getCustomer()!=customer){
-            throw new InvalidCardException("Your card is not valid!!");
+        Date currentDate = new Date();
+        if(card==null || card.getCvv()!= checkoutCartRequestDto.getCvv() || currentDate.after(card.getValidTill())){
+            throw new InvalidCardException("Card is not valid");
         }
 
         Cart cart = customer.getCart();
-        if(cart.getNumberOfItems()==0){
-            throw new Exception("Cart is empty!!");
+        if(cart.getItems().size()==0){
+            throw new EmptyCartException("Sorry! The cart is empty");
         }
 
-        try{
-            Ordered order = orderService.placeOrder(customer,card);  // throw exception if product goes out of stock
-            customer.getOrderList().add(order);
-            resetCart(cart);
-            Ordered savedOrder = orderedRepository.save(order);
+        OrderEntity order = orderService.placeOrder(cart,card);
+        resetCart(cart);
 
-            // prepare response dto
-            OrderResponseDto orderResponseDto = new OrderResponseDto();
-            orderResponseDto.setOrderDate(savedOrder.getOrderDate());
-            orderResponseDto.setCardUsed(savedOrder.getCardUsed());
-            orderResponseDto.setCustomerName(customer.getName());
-            orderResponseDto.setOrderNo(savedOrder.getOrderNo());
-            orderResponseDto.setTotalValue(savedOrder.getTotalValue());
+        OrderEntity savedOrder = orderEntityRepository.save(order);
 
-            List<ItemResponseDto> items = new ArrayList<>();
-            for(Item itemEntity: savedOrder.getItems()){
-                ItemResponseDto itemResponseDto = ItemTransformer.ItemToItemResponseDto(itemEntity);
-                items.add(itemResponseDto);
-            }
-            orderResponseDto.setItems(items);
-            return orderResponseDto;
-        }
-        catch (Exception e){
-            throw new Exception(e.getMessage());
-        }
+        // prepare response dto
+        return OrderTransformer.OrderToOrderResponseDto(savedOrder);
     }
 
     public void resetCart(Cart cart){
@@ -116,8 +104,7 @@ public class CartService {
         for(Item item: cart.getItems()){
             item.setCart(null);
         }
-        cart.setNumberOfItems(0);
-        cart.getItems().clear();
+        cart.setItems(new ArrayList<>());
 
     }
 }

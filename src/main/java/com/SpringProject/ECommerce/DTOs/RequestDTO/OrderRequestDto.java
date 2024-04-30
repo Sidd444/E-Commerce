@@ -6,17 +6,16 @@ import lombok.experimental.FieldDefaults;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@FieldDefaults(level= AccessLevel.PRIVATE)
-@Builder
+@FieldDefaults(level = AccessLevel.PRIVATE)
 public class OrderRequestDto {
 
-    int customerId;
+    String customerEmail;
 
     int productId;
 
-    int requiredQuantity;
-
-    String cardNo;
+    String cardUsed;
 
     int cvv;
+
+    int requiredQuantity;
 }

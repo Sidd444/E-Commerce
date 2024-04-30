@@ -10,20 +10,23 @@ public class ProductTransformer {
     public static Product ProductRequestDtoToProduct(ProductRequestDto productRequestDto){
 
         return Product.builder()
-                .name(productRequestDto.getProductName())
+                .productName(productRequestDto.getProductName())
                 .price(productRequestDto.getPrice())
-                .productCategory(productRequestDto.getProductCategory())
-                .quantity(productRequestDto.getQuantity())
+                .availableQuantity(productRequestDto.getAvailableQuantity())
+                .productCategory(productRequestDto.getCategory())
                 .productStatus(ProductStatus.AVAILABLE)
                 .build();
     }
 
     public static ProductResponseDto ProductToProductResponseDto(Product product){
+
         return ProductResponseDto.builder()
-                .productName(product.getName())
                 .sellerName(product.getSeller().getName())
-                .quantity(product.getQuantity())
+                .productName(product.getProductName())
                 .productStatus(product.getProductStatus())
+                .price(product.getPrice())
+                .category(product.getProductCategory())
+                .availableQuantity(product.getAvailableQuantity())
                 .build();
     }
 }

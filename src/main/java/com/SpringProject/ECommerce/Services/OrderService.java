@@ -4,24 +4,33 @@ import com.SpringProject.ECommerce.DTOs.RequestDTO.OrderRequestDto;
 import com.SpringProject.ECommerce.DTOs.ResponseDTO.ItemResponseDto;
 import com.SpringProject.ECommerce.DTOs.ResponseDTO.OrderResponseDto;
 import com.SpringProject.ECommerce.Exceptions.InvalidCardException;
-import com.SpringProject.ECommerce.Exceptions.InvalidCustomerException;
-import com.SpringProject.ECommerce.Exceptions.InvalidProductException;
+import com.SpringProject.ECommerce.Exceptions.ProductNotFoundException;
+import com.SpringProject.ECommerce.Exceptions.CustomerNotFoundException;
+import com.SpringProject.ECommerce.Exceptions.InsufficientQuantityException;
 import com.SpringProject.ECommerce.Models.*;
 import com.SpringProject.ECommerce.Repositories.CardRespository;
+import com.SpringProject.ECommerce.Repositories.CartRepository;
 import com.SpringProject.ECommerce.Repositories.CustomerRepository;
-import com.SpringProject.ECommerce.Repositories.OrderedRepository;
+import com.SpringProject.ECommerce.Repositories.ItemRepository;
+import com.SpringProject.ECommerce.Repositories.OrderEntityRepository;
 import com.SpringProject.ECommerce.Repositories.ProductRepository;
+import com.SpringProject.ECommerce.Transformer.ItemTransformer;
+import com.SpringProject.ECommerce.Transformer.OrderTransformer;
+import com.SpringProject.ECommerce.enums.ProductStatus;
+
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.mail.SimpleMailMessage;
+import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
 public class OrderService {
-
-    @Autowired ProductService productService;
 
     @Autowired
     CustomerRepository customerRepository;
@@ -31,113 +40,118 @@ public class OrderService {
 
     @Autowired
     CardRespository cardRespository;
+
     @Autowired
-    private OrderedRepository orderedRepository;
+    OrderEntityRepository orderEntityRepository;
 
-    public Ordered placeOrder(Customer customer, Card card) throws Exception {
+    @Autowired
+    JavaMailSender javaMailSender;
 
-        Cart cart = customer.getCart();
+    @Autowired
+    CardService cardService;
+    @Autowired
+    private ItemRepository itemRepository;
+    @Autowired
+    private CartRepository cartRepository;
 
-        Ordered order = new Ordered();
-        order.setOrderNo(String.valueOf(UUID.randomUUID()));
+    public OrderResponseDto placeOrder(OrderRequestDto orderRequestDto) {
 
-        String maskedCardNo = generateMaskedCard(card.getCardNo());
-        order.setCardUsed(maskedCardNo);
-        order.setCustomer(customer);
-
-        List<Item> orderedItems = new ArrayList<>();
-        for(Item item: cart.getItems()){
-            try{
-                productService.decreaseProductQuantity(item);
-                orderedItems.add(item);
-            } catch (Exception e) {
-                throw new Exception("Product Out of stock");
-            }
+        Customer customer = customerRepository.findByEmailId(orderRequestDto.getCustomerEmail());
+        if(customer==null){
+            throw new CustomerNotFoundException("Customer Doesn't exisit");
         }
-        order.setItems(orderedItems);
-        for(Item item: orderedItems)
-            item.setOrder(order);
-        order.setTotalValue(cart.getCartTotal());
+
+        Optional<Product> productOptional = productRepository.findById(orderRequestDto.getProductId());
+        if(productOptional.isEmpty()){
+            throw new ProductNotFoundException("Product doesn't exist");
+        }
+
+        Card card = cardRespository.findByCardNo(orderRequestDto.getCardUsed());
+        Date todayDate = new Date();
+        if(card==null || card.getCvv()!=orderRequestDto.getCvv() || todayDate.after(card.getValidTill())){
+            throw new InvalidCardException("Invalid card");
+        }
+
+        Product product = productOptional.get();
+        if(product.getAvailableQuantity() < orderRequestDto.getRequiredQuantity()){
+            throw new InsufficientQuantityException("Insufficient QUantity available");
+        }
+
+        int newQuantity = product.getAvailableQuantity()- orderRequestDto.getRequiredQuantity();
+        product.setAvailableQuantity(newQuantity);
+        if(newQuantity==0){
+            product.setProductStatus(ProductStatus.OUT_OF_STOCK);
+        }
+
+        // prepare Order entity
+        OrderEntity orderEntity = new OrderEntity();
+        orderEntity.setOrderId(String.valueOf(UUID.randomUUID()));
+        orderEntity.setCardUsed(cardService.generateMaskedCard(orderRequestDto.getCardUsed()));
+        orderEntity.setOrderTotal(orderRequestDto.getRequiredQuantity()*product.getPrice());
+
+        Item item = ItemTransformer.ItemRequestDtoToItem(orderRequestDto.getRequiredQuantity());
+        item.setOrderEntity(orderEntity);
+        item.setProduct(product);
+
+        orderEntity.setCustomer(customer);
+        orderEntity.getItems().add(item);
+
+        OrderEntity savedOrder = orderEntityRepository.save(orderEntity);  // save order and item
+
+        product.getItems().add(savedOrder.getItems().get(0));
+        customer.getOrders().add(savedOrder);
+
+        // send email
+        sendEmail(savedOrder);
+
+        return OrderTransformer.OrderToOrderResponseDto(savedOrder);
+    }
+
+    public OrderEntity placeOrder(Cart cart, Card card) {
+
+        OrderEntity order = new OrderEntity();
+        order.setOrderId(String.valueOf(UUID.randomUUID()));
+        order.setCardUsed(cardService.generateMaskedCard(card.getCardNo()));
+
+        int orderTotal = 0;
+        for(Item item: cart.getItems()){
+
+            Product product = item.getProduct();
+            if(product.getAvailableQuantity() < item.getRequiredQuantity()){
+                throw new InsufficientQuantityException("Sorry! Insufficient quatity available for: "+product.getProductName());
+            }
+
+            int newQuantity = product.getAvailableQuantity() - item.getRequiredQuantity();
+            product.setAvailableQuantity(newQuantity);
+            if(newQuantity==0){
+                product.setProductStatus(ProductStatus.OUT_OF_STOCK);
+            }
+
+            orderTotal += product.getPrice()*item.getRequiredQuantity();
+            item.setOrderEntity(order);
+        }
+
+        order.setOrderTotal(orderTotal);
+        order.setItems(cart.getItems());
+        order.setCustomer(card.getCustomer());
+
         return order;
     }
 
-    public OrderResponseDto placeOrder(OrderRequestDto orderRequestDto) throws Exception {
+    public void sendEmail(OrderEntity order){
 
-        Customer customer;
-        try{
-            customer = customerRepository.findById(orderRequestDto.getCustomerId()).get();
-        }
-        catch (Exception e){
-            throw new InvalidCustomerException("Customer Id is invalid !!");
-        }
+        String text = "Congrats! Your order has been placed. Following are the details: '\n' " +
+                "Order id = "+ order.getOrderId() + "\n"
+                + "Order total = " + order.getOrderTotal()
+                + "Order Date = " + order.getOrderDate();
 
-        Product product;
-        try{
-            product = productRepository.findById(orderRequestDto.getProductId()).get();
-        }
-        catch(Exception e){
-            throw new InvalidProductException("Product doesn't exist");
-        }
 
-        Card card = cardRespository.findByCardNo(orderRequestDto.getCardNo());
-        if(card==null || card.getCvv()!=orderRequestDto.getCvv() || card.getCustomer()!=customer){
-            throw new InvalidCardException("Your card is not valid!!");
-        }
+        SimpleMailMessage mail = new SimpleMailMessage();
+        mail.setTo(order.getCustomer().getEmailId());
+        mail.setFrom("acciojobspring@gmail.com");
+        mail.setSubject("Order Placed");
+        mail.setText(text);
 
-        Item item = Item.builder()
-                .requiredQuantity(orderRequestDto.getRequiredQuantity())
-                .product(product)
-                .build();
-        try{
-            productService.decreaseProductQuantity(item);
-        }
-        catch (Exception e){
-            throw new Exception(e.getMessage());
-        }
-
-        Ordered order = new Ordered();
-        order.setOrderNo(String.valueOf(UUID.randomUUID()));
-        String maskedCardNo = generateMaskedCard(card.getCardNo());
-        order.setCardUsed(maskedCardNo);
-        order.setCustomer(customer);
-        order.setTotalValue(item.getRequiredQuantity()*product.getPrice());
-        order.getItems().add(item);
-
-        customer.getOrderList().add(order);
-        item.setOrder(order);
-        product.getItemList().add(item);
-
-        Ordered savedOrder = orderedRepository.save(order); // order and item
-
-        OrderResponseDto orderResponseDto = new OrderResponseDto();
-        orderResponseDto.setOrderDate(savedOrder.getOrderDate());
-        orderResponseDto.setCardUsed(savedOrder.getCardUsed());
-        orderResponseDto.setCustomerName(customer.getName());
-        orderResponseDto.setOrderNo(savedOrder.getOrderNo());
-        orderResponseDto.setTotalValue(savedOrder.getTotalValue());
-
-        List<ItemResponseDto> items = new ArrayList<>();
-        for(Item itemEntity: savedOrder.getItems()){
-            ItemResponseDto itemResponseDto = new ItemResponseDto();
-            itemResponseDto.setPriceOfOneItem(itemEntity.getProduct().getPrice());
-            itemResponseDto.setTotalPrice(itemEntity.getRequiredQuantity()*itemEntity.getProduct().getPrice());
-            itemResponseDto.setProductName(itemEntity.getProduct().getName());
-            itemResponseDto.setQuantity(itemEntity.getRequiredQuantity());
-
-            items.add(itemResponseDto);
-        }
-
-        orderResponseDto.setItems(items);
-        return orderResponseDto;
-
-    }
-
-    public String generateMaskedCard(String cardNo){
-        String maskedCardNo = "";
-        for(int i = 0;i<cardNo.length()-4;i++)
-            maskedCardNo += 'X';
-        maskedCardNo += cardNo.substring(cardNo.length()-4);
-        return maskedCardNo;
-
+        javaMailSender.send(mail);
     }
 }
