@@ -3,7 +3,7 @@
 ## Overview
 This Spring Boot project is an e-commerce platform designed to facilitate transactions between sellers and customers. It provides APIs for sellers to add their details and items, customers to add their details, manage their carts, and complete transactions. 
 
-##[Demo video using Swagger to test API's](https://drive.google.com/file/d/1SUsNK2uO5-dTuuIseB16b9iJTI11ftzq/view?usp=drivesdk)
+## [Demo video using Swagger to test API's](https://drive.google.com/file/d/1SUsNK2uO5-dTuuIseB16b9iJTI11ftzq/view?usp=drivesdk)
 
 ## Dependencies
 - Starter-web
