@@ -5,6 +5,10 @@ This Spring Boot project is an e-commerce platform designed to facilitate transa
 
 ## [Demo video using Swagger to test API's](https://drive.google.com/file/d/1SUsNK2uO5-dTuuIseB16b9iJTI11ftzq/view?usp=drivesdk)
 
+## Frontend
+- React
+- Tailwind CSS
+
 ## Dependencies
 - Starter-web
 - JPA
